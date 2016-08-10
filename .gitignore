@@ -4,6 +4,11 @@
 # User-specific files
 *.suo
 *.user
+*.cs
+*.config
+*.csproj
+*.resx
+*.settings
 *.userosscache
 *.sln.docstates
 
