@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Reflection;
+using System.Security.Principal;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -41,8 +42,19 @@ namespace PortAIO_Updater
             }
         }
 
+        public bool IsAdministrator()
+        {
+            return (new WindowsPrincipal(WindowsIdentity.GetCurrent()))
+                    .IsInRole(WindowsBuiltInRole.Administrator);
+        }
+
         private void Form1_Load(object sender, EventArgs e)
         {
+            if (!IsAdministrator())
+            {
+                MessageBox.Show("Please run PortAIO-Updater as administrator.");
+                this.Close();
+            }
         }
 
 
@@ -88,42 +100,52 @@ namespace PortAIO_Updater
                     File.Delete(AppData + @"\EloBuddy\Addons\Libraries\PortAIO.dll");
                     File.Delete(AppData + @"\EloBuddy\Addons\Libraries\PortAIO.Common.dll");
                 }
-
-                string url1 = @"https://github.com/berbb/PortAIO-Updater/raw/master/PortAIO.dll";
-                WebClient client1 = new WebClient();
-                client1.DownloadFileAsync(new Uri(url1), AppData + @"\EloBuddy\Addons\Libraries\PortAIO.dll");
-
-                string url2 = @"https://github.com/berbb/PortAIO-Updater/raw/master/PortAIO.Common.dll";
-                WebClient client2 = new WebClient();
-                client2.DownloadFileAsync(new Uri(url2), AppData + @"\EloBuddy\Addons\Libraries\PortAIO.Common.dll");
-
-                client2.DownloadFileCompleted += new AsyncCompletedEventHandler(client_UpdateFileCompleted);
+                DownloadFiles();
             }
             else // Download
             {
                 button1.Enabled = false;
-                string url1 = @"https://github.com/berbb/PortAIO-Updater/raw/master/PortAIO.dll";
-                WebClient client1 = new WebClient();                
-                client1.DownloadFileAsync(new Uri(url1), AppData + @"\EloBuddy\Addons\Libraries\PortAIO.dll");
-
-                string url2 = @"https://github.com/berbb/PortAIO-Updater/raw/master/PortAIO.Common.dll";
-                WebClient client2 = new WebClient();
-                client2.DownloadFileAsync(new Uri(url2), AppData + @"\EloBuddy\Addons\Libraries\PortAIO.Common.dll");
-
-                client2.DownloadFileCompleted += new AsyncCompletedEventHandler(client_DownloadFileCompleted);
+                DownloadFiles();
             }
         }
 
-        void client_UpdateFileCompleted(object sender, AsyncCompletedEventArgs e)
+        public void DownloadFiles()
         {
-            MessageBox.Show("Successfully Updated. The program will restart when you exit this box.");
-            System.Diagnostics.Process.Start(Application.ExecutablePath);
-            this.Close();
+            string url1 = @"https://github.com/berbb/PortAIO-Updater/raw/master/PortAIO.dll";
+            using (WebClient wc = new WebClient())
+            {
+                wc.DownloadProgressChanged += wc_DownloadProgressChanged;
+                wc.DownloadFileAsync(new Uri(url1), AppData + @"\EloBuddy\Addons\Libraries\PortAIO.dll");
+                wc.DownloadFileCompleted += Wc_DownloadFileCompleted;
+            }
         }
 
-        void client_DownloadFileCompleted(object sender, AsyncCompletedEventArgs e)
+        void wc_DownloadProgressChanged(object sender, DownloadProgressChangedEventArgs e)
         {
-            MessageBox.Show("Successfully downloaded. The program will restart when you exit this box.");
+            progressBar1.Value = e.ProgressPercentage;
+            label1.Text = "Downloading PortAIO.dll (" + e.ProgressPercentage + "%)";
+        }
+
+        private void Wc_DownloadFileCompleted(object sender, AsyncCompletedEventArgs e)
+        {
+            string url2 = @"https://github.com/berbb/PortAIO-Updater/raw/master/PortAIO.Common.dll";
+            using (WebClient wc1 = new WebClient())
+            {
+                wc1.DownloadProgressChanged += wc1_DownloadProgressChanged;
+                wc1.DownloadFileAsync(new Uri(url2), AppData + @"\EloBuddy\Addons\Libraries\PortAIO.Common.dll");
+                wc1.DownloadFileCompleted += Wc1_DownloadFileCompleted; ;
+            }
+        }
+
+        void wc1_DownloadProgressChanged(object sender, DownloadProgressChangedEventArgs e)
+        {
+            progressBar1.Value = e.ProgressPercentage;
+            label1.Text = "Downloading PortAIO.Common.dll (" + e.ProgressPercentage + "%)";
+        }
+
+        private void Wc1_DownloadFileCompleted(object sender, AsyncCompletedEventArgs e)
+        {
+            MessageBox.Show("Download complete. The program will restart when you exit this box.");
             System.Diagnostics.Process.Start(Application.ExecutablePath);
             this.Close();
         }
