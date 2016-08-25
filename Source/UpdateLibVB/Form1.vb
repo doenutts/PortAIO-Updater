@@ -144,7 +144,7 @@ Public Class Form1
             If VersionPort.FileVersion = PortAIOGitVersion Then
                 MetroLabel6.Text = "PortAIO Stataus : UPDATED"
                 MetroLabel4.Text = "download done.."
-                MaterialCheckBox3.Enabled = True
+                MaterialCheckBox3.Visible = True
             Else
                 MessageBox.Show("Download failed")
             End If
